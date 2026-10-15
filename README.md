@@ -11,8 +11,6 @@ The privacy connector for the NTU PaCE enquiry engine. It runs inside the NTU/RS
 
 Raw email, attachments, sender details and the placeholder map never leave the connector. Anything it cannot handle safely comes back as `REQUIRES_MANUAL_HANDLING` with a reason code instead of being sent.
 
-`connector_walk_through.html` follows one email through every step.
-
 ## Install
 
 Python 3.10–3.12, CPU only, Linux or macOS. The OCR model files ship inside the package; nothing is downloaded at run time except the dependencies themselves.
