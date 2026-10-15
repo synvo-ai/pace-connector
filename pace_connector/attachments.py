@@ -276,7 +276,7 @@ class LocalAttachmentProcessor:
         for page_number, (image, tokens) in enumerate(zip(pages, token_pages)):
             if len(tokens) < self.limits.min_usable_tokens_per_page:
                 raise _AttachmentFailure("PRIVACY_UNCERTAIN")
-            joined = " ".join(token.text for token in tokens)
+            joined = _join_tokens(tokens)
             all_text.append(joined)
             try:
                 findings = self.detector.find(joined)
@@ -305,7 +305,7 @@ class LocalAttachmentProcessor:
             if len(verified_tokens) < self.limits.min_usable_tokens_per_page:
                 raise _AttachmentFailure("PRIVACY_UNCERTAIN")
             try:
-                verified_text = " ".join(token.text for token in verified_tokens)
+                verified_text = _join_tokens(verified_tokens)
                 residual = self.detector.find(verified_text)
             except Exception as error:
                 name = type(error).__name__
@@ -366,6 +366,25 @@ def _pdf_words(page, number: int) -> list[OcrToken]:
         return words
     finally:
         textpage.close()
+
+
+def _join_tokens(tokens: list[OcrToken]) -> str:
+    """Join tokens with a newline where the next one starts a new line, else a space.
+
+    Both separators are one character, so `_align` offsets hold. Without the
+    newline, a name on its own line runs into the next line ("Alice Example
+    alice@...") and is missed or over-widened.
+    """
+    parts: list[str] = []
+    for index, token in enumerate(tokens):
+        if index:
+            previous = tokens[index - 1]
+            previous_ys = [point[1] for point in previous.polygon]
+            centre = sum(point[1] for point in token.polygon) / len(token.polygon)
+            new_line = token.page != previous.page or not (min(previous_ys) <= centre <= max(previous_ys))
+            parts.append("\n" if new_line else " ")
+        parts.append(token.text)
+    return "".join(parts)
 
 
 def _align(matches: list[tuple[int, int]], tokens: list[OcrToken], minimum_confidence: float) -> list[tuple[float, float, float, float]]:
