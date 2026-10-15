@@ -221,8 +221,10 @@ def main(argv: list[str] | None = None) -> None:
     engine_key = os.environ.get("PACE_ENGINE_API_KEY")
     if not engine_key:
         parser.error("set PACE_ENGINE_API_KEY to the key Synvo issued for the engine")
-    if not os.environ.get("PACE_CONNECTOR_NONCE_SECRET"):
-        print("warning: PACE_CONNECTOR_NONCE_SECRET is not set; a resend after a restart gets a new masking and the engine rejects it as IDEMPOTENCY_CONFLICT", flush=True)
+    if len(os.environ.get("PACE_CONNECTOR_NONCE_SECRET", "")) < 16:
+        # Without a fixed secret, a resend after a restart is masked differently and the engine
+        # rejects it as IDEMPOTENCY_CONFLICT.
+        parser.error("set PACE_CONNECTOR_NONCE_SECRET to a random string of at least 16 characters, and keep it across restarts")
 
     ConnectorHandler.connector = MimePrivacyConnector(LocalHttpEngineClient(args.engine_url, engine_key, timeout_seconds=args.engine_timeout))
     ConnectorHandler.api_key = os.environ.get("PACE_CONNECTOR_API_KEY") or None

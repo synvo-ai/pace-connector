@@ -61,9 +61,9 @@ class AttachmentProcessingLimits:
     max_pdf_pages: int = 10
     max_image_width: int = 4_000
     max_image_height: int = 4_000
-    max_total_rendered_pixels: int = 16_000_000
+    max_total_rendered_pixels: int = 40_000_000
     max_ocr_pages: int = 10
-    max_elapsed_seconds: float = 12.0
+    max_elapsed_seconds: float = 45.0
     min_alignment_confidence: float = 0.50
     # A nontrivial raster/scanned page with no or a lone OCR token cannot be
     # distinguished safely from an OCR miss; do not certify it as private.
@@ -227,7 +227,7 @@ class LocalAttachmentProcessor:
             for number in range(len(document)):
                 self._check_time(started)
                 page = document[number]
-                image = page.render(scale=2).to_pil().convert("RGB")
+                image = self._fit(page.render(scale=2).to_pil().convert("RGB"))
                 self._validate_pixels([*pages, image])
                 words = _pdf_words(page, number)
                 if words:
@@ -253,6 +253,7 @@ class LocalAttachmentProcessor:
             raise
         except Exception as error:
             raise _AttachmentFailure("EXTRACTION_FAILED") from error
+        image = self._fit(image)
         self._validate_pixels([image])
         ocr_started = time.monotonic()
         tokens = self._ocr_page(image, 0, started)
@@ -318,6 +319,14 @@ class LocalAttachmentProcessor:
             redacted.append(output.getvalue())
         metrics = AttachmentMetrics(file_type, len(pages), sum(image.width * image.height for image in pages), ocr_tokens, initial_ocr_duration_ms + verification_ocr_duration_ms, redaction_duration_ms, True, "PRIVACY_VERIFIED")
         return "\n".join(all_text), regions, redacted, metrics
+
+    def _fit(self, image: Image.Image) -> Image.Image:
+        """Scale a large image (a 12 MP phone photo) down to the maximum size instead of refusing it."""
+        if image.width <= self.limits.max_image_width and image.height <= self.limits.max_image_height:
+            return image
+        scaled = image.copy()
+        scaled.thumbnail((self.limits.max_image_width, self.limits.max_image_height), Image.Resampling.LANCZOS)
+        return scaled
 
     def _validate_pixels(self, pages: list[Image.Image]) -> None:
         for image in pages:

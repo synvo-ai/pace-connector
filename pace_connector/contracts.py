@@ -14,7 +14,8 @@ AttachmentContentState = Literal["METADATA_ONLY", "NOT_READ", "UNSUPPORTED", "RE
 
 @dataclass(frozen=True)
 class ConnectorLimits:
-    max_raw_bytes: int = 256 * 1024
+    # Exchange Online accepts messages up to about 25 MB by default. Graph JSON may be up to twice this.
+    max_raw_bytes: int = 25 * 1024 * 1024
     max_identifier_chars: int = 160
     max_subject_chars: int = 1_000
     max_body_chars: int = 40_000
