@@ -1,0 +1,87 @@
+{
+  "message": {
+    "id": "AAMkAExampleFollowup0003",
+    "internetMessageId": "<followup-003@example.test>",
+    "conversationId": "AAQkAExampleConversation0002",
+    "subject": "Re: Enquiry about Biomaterials course",
+    "body": {
+      "contentType": "html",
+      "content": "<div dir=\"ltr\">Dear Jun Hao,<br><br>Thank you for the details.<br><br>I would like to know more about the scholarship options available for this course. Could you share some information regarding that?<br><br>Thanks &amp; Regards,<br>Mei Xuan Koh</div><div class=\"gmail_quote gmail_quote_container\"><blockquote class=\"gmail_quote\"><div>Dear Mei Xuan Koh,<br>Thank you for your enquiry about the Biomaterials course...</div></blockquote></div>"
+    },
+    "from": {
+      "emailAddress": {
+        "name": "Mei Xuan Koh",
+        "address": "meixuan.koh@example.test"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "PaCE Enquiries",
+          "address": "enquiries@pace-mock.example"
+        }
+      }
+    ]
+  },
+  "thread": [
+    {
+      "message": {
+        "id": "AAMkAExampleFollowup0001",
+        "internetMessageId": "<followup-001@example.test>",
+        "conversationId": "AAQkAExampleConversation0002",
+        "subject": "Enquiry about Biomaterials course",
+        "body": {
+          "contentType": "html",
+          "content": "<div>Dear PaCE,<br><br>When is the next intake for the Biomaterials (Asynchronous e-learning) course, and what is the fee?<br><br>Regards,<br>Mei Xuan Koh<br>Mobile: +65 9234 5678</div>"
+        },
+        "from": {
+          "emailAddress": {
+            "name": "Mei Xuan Koh",
+            "address": "meixuan.koh@example.test"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "PaCE Enquiries",
+              "address": "enquiries@pace-mock.example"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "message": {
+        "id": "AAMkAExampleFollowup0002",
+        "internetMessageId": "<followup-002@example.test>",
+        "conversationId": "AAQkAExampleConversation0002",
+        "subject": "Re: Enquiry about Biomaterials course",
+        "body": {
+          "contentType": "html",
+          "content": "<div>Dear Mei Xuan Koh,<br><br>Thank you for your enquiry about the Biomaterials (Asynchronous e-learning) course. The next intake is on 9 August 2026, and the full programme fee, including GST, is S$3,665.67.<br><br>Warm regards,<br>Jun Hao<br>PaCE Enquiries</div><div class=\"gmail_quote\"><blockquote class=\"gmail_quote\">When is the next intake ...</blockquote></div>"
+        },
+        "from": {
+          "emailAddress": {
+            "name": "Jun Hao Lim (PaCE Enquiries)",
+            "address": "enquiries@pace-mock.example"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Mei Xuan Koh",
+              "address": "meixuan.koh@example.test"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "priorIssues": [
+    {
+      "issueId": "ISSUE-001",
+      "summary": "Mei Xuan Koh asks for the next intake and fee of the Biomaterials (Asynchronous e-learning) course.",
+      "recommendedAction": "ANSWER"
+    }
+  ]
+}

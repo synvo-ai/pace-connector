@@ -311,7 +311,7 @@ def known_name_terms(addresses: Iterable[str | None]) -> tuple[str, ...]:
     """
     terms: set[str] = set()
     for _name, _address in getaddresses([value for value in addresses if value]):
-        name = _name.strip().strip("\"'")
+        name = re.sub(r"\([^)]*\)", " ", _name).strip().strip("\"'")  # "Jun Hao Lim (PaCE Enquiries)"
         words = [word for word, _start, _end in _tokens(name)]
         if not words or len(words) > 6 or re.search(r"\d|@", name):
             continue

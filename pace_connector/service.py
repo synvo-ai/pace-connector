@@ -108,7 +108,7 @@ class MimePrivacyConnector:
         if len(attachments) > _effective_limit(limits.max_attachments, _MAX_ATTACHMENTS):
             raise AttachmentLimitError()
         # Same idempotency key -> same placeholders, so a retry replays instead of conflicting.
-        known_names = names.known_name_terms((parsed.local_sender, *parsed.local_recipients))
+        known_names = names.known_name_terms((parsed.local_sender, *parsed.local_recipients, *connector_input.thread_addresses))
         if isinstance(self._masking_engine, LocalPrivacyMasker):
             session = self._masking_engine.new_seeded_session(connector_input.idempotency_key, known_names=known_names)
         else:
@@ -282,8 +282,9 @@ def _restore_result(engine_response: dict[str, Any], session: MaskingSession) ->
 
 def _restore_strings(value: Any, session: MaskingSession) -> Any:
     if isinstance(value, str):
-        # A placeholder cut off by truncation cannot be restored; drop the fragment.
-        return re.sub(r"\[\[PII_[^\]\s]*$", "…", session.restore(value)) if "[[" in value else value
+        restored = session.restore(value) if "[[" in value else value
+        # A placeholder cut off by truncation ("…[[PII_PER", "…[") cannot be restored; drop it.
+        return re.sub(r"\[\[?(?:P(?:I(?:I(?:_[^\]\s]*)?)?)?)?$", "…", restored) if "[" in value[-40:] else restored
     if isinstance(value, list):
         return [_restore_strings(item, session) for item in value]
     if isinstance(value, dict):

@@ -31,7 +31,7 @@ export PACE_CONNECTOR_API_KEY=<optional: key your system must send to the connec
 .venv/bin/python -m pace_connector.server --engine-url <engine URL> --port 8788
 ```
 
-Options: `--host` (default `127.0.0.1`), `--port` (default `8788`), `--engine-url` (or `PACE_ENGINE_URL`), `--engine-timeout` in seconds (default 120), `--show-masked` (testing only: adds the exact masked request to each answer).
+Options: `--host` (default `127.0.0.1`), `--port` (default `8788`), `--engine-url` (or `PACE_ENGINE_URL`), `--engine-timeout` in seconds (default 120), `--mailbox` (or `PACE_MAILBOX_ADDRESSES`: PaCE's own addresses, comma-separated, used for follow-ups below), `--show-masked` (testing only: adds the exact masked request to each answer).
 
 ### `POST /v0/messages`
 
@@ -45,6 +45,34 @@ Send one email per request:
 curl -s -H 'content-type: application/json' -H 'x-api-key: <connector key>' \
   --data-binary @examples/graph_message.json http://127.0.0.1:8788/v0/messages
 ```
+
+### Follow-ups
+
+On a follow-up, the quoted history in the body is cut and not sent. Send the earlier messages of the conversation, and the issues from earlier results, in an envelope instead (`application/json`):
+
+```
+{
+  "message": { ...the new Graph message... },
+  "thread": [
+    {"message": { ...earlier Graph message... }},
+    {"direction": "STAFF", "message": { ... }},
+    {"direction": "USER", "body": "plain text of an earlier message"}
+  ],
+  "priorIssues": [ { "summary": "...", "missingInformation": ["..."] } ]
+}
+```
+
+- **`message`:** the new message. Use `"eml": "<base64>"` instead for a raw `.eml`.
+- **`thread`:** the earlier messages, oldest first. Get them from Graph with `GET /users/{id}/messages?$filter=conversationId eq '<conversationId>'`, without the new message.
+  - Each item is a Graph message (`message`), a base64 `.eml` (`eml`) or plain text (`body`). Only each message's own new text is used, since its quote repeats older messages. Attachments of earlier messages are not read, so fetch them without `$expand=attachments` (the whole request must stay under 512 KB).
+  - **`direction`:** `USER` for the enquirer, `STAFF` for PaCE. It can be left out for Graph and `.eml` items if the connector is started with `--mailbox` (or `PACE_MAILBOX_ADDRESSES`) listing PaCE's own addresses: messages from those addresses count as `STAFF`.
+  - **Limit:** the newest 30 messages are kept, and up to 20,000 characters of each.
+- **`priorIssues`:** the `issues` from earlier results for this conversation, as returned. Only `summary` (and `missingInformation`, if present) is used; other fields are ignored. Up to 24.
+- **Masking:** thread messages and earlier issues are masked like the new message. A person gets the same placeholder everywhere, and the names in the thread messages' From/To are masked too.
+- **Resends:** an identical envelope replays the first answer. The same email with a different thread or different issues is analysed again.
+- **Errors:** a malformed envelope returns HTTP 400 with `INVALID_ENVELOPE` and the reason.
+
+`examples/graph_followup.json` is a complete example: the new message only says "this course", and the course is named in the thread.
 
 Every processed email returns HTTP 200:
 
@@ -61,7 +89,7 @@ Every processed email returns HTTP 200:
 
 - `message` echoes the Graph identifiers so you can match the answer to the email.
 - `result` and `reply` contain personal details again: keep them inside your network.
-- Other status codes concern the HTTP call itself: 401 (wrong `x-api-key`), 404, 413 (over 512 KB), 415 (wrong content type).
+- Other status codes concern the HTTP call itself: 400 (malformed follow-up envelope), 401 (wrong `x-api-key`), 404, 413 (over 512 KB), 415 (wrong content type).
 
 `GET /v0/health` returns `{"status": "ok", ...}`.
 
@@ -113,7 +141,7 @@ result = connector.process(ConnectorInput(b"", **message_ids("graph:" + graph_id
 - **Names that are also ordinary English words,** written alone with no cue ("please ask Hope"), can be missed.
 - **Programme titles:** a Title Case programme title containing a word the connector does not know can be masked as a name. Add such words to `pace_connector/public_words.txt`.
 - **English only.** Text in other scripts is not sent; the email goes to manual handling.
-- **Follow-ups:** quoted history in the body is cut and not sent, so on a follow-up the engine sees the newest message.
+- **Follow-ups:** quoted history in the body is cut and not sent. Without an envelope, the engine sees only the newest message.
 
 How these were measured: `benchmarks/README.md`.
 

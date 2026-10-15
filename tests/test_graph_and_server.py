@@ -125,6 +125,15 @@ class GraphConnectorTests(unittest.TestCase):
                 return response
         result = self.connector(Truncating()).process(graph_input(GRAPH))
         self.assertNotIn("[[PII_", result.restored_result["issues"][0]["summary"])
+        for cut in (1, 2, 5):
+            class Short(EchoClient):
+                def analyse(self, canonical_request: dict, cut=cut) -> dict:
+                    response = super().analyse(canonical_request)
+                    body = response["result"]["issues"][0]["summary"]
+                    response["result"]["issues"][0]["summary"] = body[: body.rindex("[[PII_") + cut]
+                    return response
+            summary = self.connector(Short()).process(graph_input(GRAPH)).restored_result["issues"][0]["summary"]
+            self.assertTrue(summary.endswith("…"), summary[-20:])
 
 
 class ServerTests(unittest.TestCase):

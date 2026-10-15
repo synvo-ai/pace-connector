@@ -77,6 +77,9 @@ class ConnectorInput:
     local_attachments: tuple[LocalAttachment, ...] = ()
     limits: ConnectorLimits = field(default_factory=ConnectorLimits)
     graph_message: bytes | str | dict[str, Any] | None = None
+    # Display names from the thread messages' envelopes ("Mei Xuan Koh <...>"). Local only; they
+    # are masked wherever they appear, like the current message's sender and recipients.
+    thread_addresses: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
