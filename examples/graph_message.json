@@ -1,0 +1,39 @@
+{
+  "id": "AAMkAExample0001",
+  "createdDateTime": "2026-10-13T02:03:16Z",
+  "receivedDateTime": "2026-10-13T02:03:16Z",
+  "sentDateTime": "2026-10-13T02:02:56Z",
+  "hasAttachments": false,
+  "internetMessageId": "<example-001@example.test>",
+  "subject": "Re: Enquiry about Advanced Professional Certificate in Data Science and AI",
+  "bodyPreview": "Dear PaCE team, Thank you for the details. I would like to know more about the funding options for this course.",
+  "conversationId": "AAQkAExampleConversation0001",
+  "isDraft": false,
+  "body": {
+    "contentType": "html",
+    "content": "<html><head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"></head><body><div dir=\"ltr\">Dear PaCE team,<br><br>Thank you for the details.<br><br>I would like to know more about the funding options for this course. My mobile is +65 9123 4567 if a call is easier.<br><br>Thanks &amp; Regards,<br>Tan Mei Ling<br><br></div><br><div class=\"gmail_quote gmail_quote_container\"><div dir=\"ltr\" class=\"gmail_attr\">On Mon, Oct 12, 2026 at 10:02 AM PaCE Enquiries &lt;<a href=\"mailto:enquiries@example.test\">enquiries@example.test</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0px 0px 0px 0.8ex; border-left:1px solid rgb(204,204,204); padding-left:1ex\"><div>Dear Tan Mei Ling,<br><br>The next intake starts in January 2027.<br><br>Warm regards,<br>PaCE Enquiries</div></blockquote></div></body></html>"
+  },
+  "sender": {
+    "emailAddress": {
+      "name": "Tan Mei Ling",
+      "address": "meiling.tan@example.test"
+    }
+  },
+  "from": {
+    "emailAddress": {
+      "name": "Tan Mei Ling",
+      "address": "meiling.tan@example.test"
+    }
+  },
+  "toRecipients": [
+    {
+      "emailAddress": {
+        "name": "PaCE Enquiries",
+        "address": "enquiries@example.test"
+      }
+    }
+  ],
+  "ccRecipients": [],
+  "bccRecipients": [],
+  "replyTo": []
+}

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pace-connector"
+version = "0.1.0"
+description = "Privacy connector for the NTU PaCE enquiry engine: masks personal details in emails locally before analysis"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [{name = "Synvo AI"}]
+requires-python = ">=3.10"
+dependencies = [
+  "pypdfium2==5.14.0",
+  "Pillow==12.1.0",
+  "rapidocr==3.10.0",
+  "onnxruntime==1.31.0",
+  "spacy==3.8.16",
+  "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+]
+
+[project.optional-dependencies]
+test = [
+  "reportlab==5.0.1",
+  "pypdf==6.20.1",
+]
+paddle = [
+  "paddleocr==3.7.0",
+  "paddlepaddle==3.3.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["pace_connector*"]
+
+[tool.setuptools.package-data]
+pace_connector = ["public_institutional_entities.v1.json", "public_words.txt", "english_words.txt.gz", "english_words.NOTICE", "models/*.onnx"]

@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connector Walk-through</title>
+<style>
+:root {
+  --bg: #fbfaf7; --surface: #ffffff; --ink: #1d1f23; --muted: #5d636e; --line: #e3e0d8;
+  --accent: #1f5f8b; --accent-soft: #e5eff6; --ok: #2c7a4b; --ok-soft: #e4f2e8; --warn: #9a5b0b; --warn-soft: #fbefdc;
+  --pii: #8b2f5f; --pii-soft: #f6e4ee; --code-bg: #f3f1ec; --ntu: #eef4ea; --synvo: #eef0f8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a; --surface: #1d2024; --ink: #e8e6e1; --muted: #a2a7b0; --line: #33373d;
+    --accent: #7db7e0; --accent-soft: #1d2e3b; --ok: #7cc79a; --ok-soft: #1c3226; --warn: #e3ad5c; --warn-soft: #3a2d18;
+    --pii: #e79ac2; --pii-soft: #3a2230; --code-bg: #24272c; --ntu: #1d2a1f; --synvo: #1f2333;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --surface: #1d2024; --ink: #e8e6e1; --muted: #a2a7b0; --line: #33373d;
+  --accent: #7db7e0; --accent-soft: #1d2e3b; --ok: #7cc79a; --ok-soft: #1c3226; --warn: #e3ad5c; --warn-soft: #3a2d18;
+  --pii: #e79ac2; --pii-soft: #3a2230; --code-bg: #24272c; --ntu: #1d2a1f; --synvo: #1f2333;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 40px 16px 80px; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; margin: 56px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 1.05rem; margin: 0 0 6px; }
+p { margin: 0 0 12px; }
+.lede { color: var(--muted); font-size: 1.08rem; max-width: 70ch; }
+.meta { color: var(--muted); font-size: .88rem; margin-bottom: 28px; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .86em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; line-height: 1.5; margin: 10px 0 14px; white-space: pre-wrap; word-break: break-word; }
+.pii { color: var(--pii); background: var(--pii-soft); border-radius: 3px; padding: 0 2px; }
+.cut { color: var(--muted); text-decoration: line-through; }
+nav.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 20px 0; }
+nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+nav.toc li { margin: 0 0 4px; break-inside: avoid; }
+nav.toc a { color: var(--accent); text-decoration: none; }
+@media (max-width: 640px) { nav.toc ol { columns: 1; } }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 18px 0; }
+.diagram svg { width: 100%; height: auto; display: block; }
+.step { display: grid; grid-template-columns: 44px 1fr; gap: 14px; margin: 26px 0; }
+.num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: var(--surface); display: grid; place-items: center; font-weight: 700; }
+.where { display: inline-block; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-left: 8px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 700px) { .cols { grid-template-columns: 1fr; } .step { grid-template-columns: 1fr; } }
+.cols > div > .label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: .95rem; }
+.good { border-left: 3px solid var(--ok); background: var(--ok-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: .95rem; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: .93rem; }
+.tablewrap { overflow-x: auto; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+ul { padding-left: 22px; margin: 6px 0 12px; }
+li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<main>
+<h1>How an email passes through the privacy connector</h1>
+<p class="lede">The connector is a small Python service that runs inside RSTN's network, next to their email system. It sits between the PaCE mailbox and Synvo's engine. Its job is to make sure that only masked text ever leaves, and that the answer coming back is made readable again on the NTU side.</p>
+<p class="meta">Connector version <code>pace-mime-connector-v0</code> · source in <code>connector/pace_connector/</code> · 15 Oct 2026 · all names and numbers on this page are made up.</p>
+
+<nav class="toc" aria-label="Contents">
+<ol>
+<li><a href="#picture">The picture</a></li>
+<li><a href="#walk">One email, step by step</a></li>
+<li><a href="#never">What never leaves</a></li>
+<li><a href="#fail">When it stops an email</a></li>
+<li><a href="#code">Where each step lives in the code</a></li>
+<li><a href="#run">Running it</a></li>
+<li><a href="#gaps">Known gaps</a></li>
+</ol>
+</nav>
+
+<h2 id="picture">1. The picture</h2>
+<p>Three parties are involved. RSTN's system reads the mailbox through Microsoft Graph. The connector, hosted by RSTN, does all the privacy work. Synvo's engine, hosted by Synvo, reads the masked enquiry and recommends what to do. The dashed line is the trust boundary: only masked JSON crosses it.</p>
+<div class="diagram" role="img" aria-label="RSTN system sends the email to the connector inside the NTU/RSTN network; the connector sends masked JSON across the trust boundary to Synvo's engine and gets a masked result back; the connector restores names and returns the result to RSTN's system.">
+<svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+  <rect x="10" y="20" width="520" height="265" rx="14" fill="var(--ntu)" stroke="var(--line)"/>
+  <text x="28" y="46" font-size="13" font-weight="700" fill="var(--muted)">NTU / RSTN NETWORK</text>
+  <rect x="610" y="20" width="240" height="265" rx="14" fill="var(--synvo)" stroke="var(--line)"/>
+  <text x="628" y="46" font-size="13" font-weight="700" fill="var(--muted)">SYNVO</text>
+  <line x1="570" y1="12" x2="570" y2="292" stroke="var(--warn)" stroke-width="2" stroke-dasharray="7 6"/>
+  <text x="570" y="300" font-size="11" text-anchor="middle" fill="var(--warn)">trust boundary</text>
+
+  <rect x="30" y="80" width="150" height="80" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+  <text x="105" y="112" font-size="14" font-weight="700" text-anchor="middle" fill="var(--ink)">RSTN system</text>
+  <text x="105" y="132" font-size="12" text-anchor="middle" fill="var(--muted)">reads mailbox</text>
+  <text x="105" y="148" font-size="12" text-anchor="middle" fill="var(--muted)">via Graph</text>
+
+  <rect x="270" y="65" width="230" height="200" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+  <text x="385" y="92" font-size="14" font-weight="700" text-anchor="middle" fill="var(--accent)">Privacy connector</text>
+  <text x="290" y="120" font-size="12" fill="var(--ink)">1  parse email, cut quote</text>
+  <text x="290" y="142" font-size="12" fill="var(--ink)">2  read attachments, black out</text>
+  <text x="290" y="164" font-size="12" fill="var(--ink)">3  mask personal details</text>
+  <text x="290" y="186" font-size="12" fill="var(--ink)">4  independent egress check</text>
+  <text x="290" y="208" font-size="12" fill="var(--ink)">5  call engine</text>
+  <text x="290" y="230" font-size="12" fill="var(--ink)">6  restore names locally</text>
+  <text x="290" y="252" font-size="11" fill="var(--muted)">placeholder map: memory only</text>
+
+  <rect x="640" y="100" width="190" height="90" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+  <text x="735" y="136" font-size="14" font-weight="700" text-anchor="middle" fill="var(--ink)">Synvo engine</text>
+  <text x="735" y="156" font-size="12" text-anchor="middle" fill="var(--muted)">sees masked text only</text>
+
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker></defs>
+  <line x1="180" y1="105" x2="266" y2="105" stroke="var(--ink)" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="223" y="97" font-size="11" text-anchor="middle" fill="var(--muted)">email</text>
+  <line x1="266" y1="140" x2="182" y2="140" stroke="var(--ink)" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="223" y="158" font-size="11" text-anchor="middle" fill="var(--muted)">result,</text>
+  <text x="223" y="172" font-size="11" text-anchor="middle" fill="var(--muted)">names back</text>
+  <line x1="500" y1="130" x2="636" y2="130" stroke="var(--ink)" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="568" y="122" font-size="11" text-anchor="middle" fill="var(--pii)">masked JSON</text>
+  <line x1="636" y1="165" x2="504" y2="165" stroke="var(--ink)" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="568" y="183" font-size="11" text-anchor="middle" fill="var(--pii)">masked result</text>
+</svg>
+</div>
+<p>RSTN's system talks to the connector in plain HTTP inside its own network (<code>POST /v0/messages</code>). The connector talks to the engine over the engine's API (<code>POST /v0/enquiries?mode=sync</code>, with an API key). RSTN's system never calls the engine directly.</p>
+
+<h2 id="walk">2. One email, step by step</h2>
+<p>The example is <code>examples/graph_with_attachment.json</code>: a reply from a prospective student, as Microsoft Graph returns it, with a payment receipt image attached. Every snippet below is real output from the connector running against the engine on 15 Oct (engine in offline test mode, so its answer text is a fixed sentence).</p>
+
+<div class="step"><div class="num">1</div><div>
+<h3>Receive <span class="where">server.py</span></h3>
+<p>RSTN's system posts the Graph message as it is, as <code>application/json</code>. A raw <code>.eml</code> works too, as <code>message/rfc822</code>. To have attachments read, RSTN fetches the message with <code>?$expand=attachments</code>; otherwise the connector only records that there was an attachment.</p>
+<pre>POST /v0/messages
+content-type: application/json
+
+{ "id": "AAMkAExample0002", "conversationId": "AAQkAExampleConversation0001",
+  "subject": "Re: Enquiry about Advanced Professional Certificate in Data Science and AI",
+  "from": { "emailAddress": { "name": "<span class="pii">Tan Mei Ling</span>", "address": "<span class="pii">meiling.tan@example.test</span>" } },
+  "body": { "contentType": "html", "content": "&lt;div dir=\"ltr\"&gt;Dear PaCE team, … &lt;div class=\"gmail_quote\"&gt; …" },
+  "attachments": [ { "name": "receipt.png", "contentType": "image/png", "contentBytes": "iVBORw0…" } ] }</pre>
+<p>The connector then derives the three IDs the engine needs from the Graph message <code>id</code>: a request ID, a correlation ID and an idempotency key, each a fixed prefix plus 32 hex characters. Because they come from the message, sending the same email twice produces the same IDs, and the engine returns its first answer instead of working again.</p>
+</div></div>
+
+<div class="step"><div class="num">2</div><div>
+<h3>Parse and cut the quoted history <span class="where">graph.py · mime.py</span></h3>
+<p>The HTML body becomes plain text. Everything from the first quote block onward is cut: Gmail's <code>gmail_quote</code>, Outlook's <code>divRplyFwdMsg</code> / <code>appendonsend</code>, a <code>&lt;blockquote&gt;</code>, or in plain text an "On … wrote:" line or "-----Original Message-----". The sender, recipients and Graph IDs are kept aside locally and are never sent.</p>
+<div class="cols">
+<div><div class="label">Body as received (shown as text)</div>
+<pre>Dear PaCE team,
+Thank you for the details.
+I would like to know more about the funding options for this course. My mobile is <span class="pii">+65 9123 4567</span> if a call is easier. I have attached my payment receipt.
+Thanks &amp; Regards,
+<span class="pii">Tan Mei Ling</span>
+<span class="cut">On Mon, Oct 12, 2026 … PaCE Enquiries wrote:
+Dear Tan Mei Ling, The next intake starts in January 2027. …</span></pre></div>
+<div><div class="label">Current message kept</div>
+<pre>Dear PaCE team,
+
+Thank you for the details.
+
+I would like to know more about the funding options for this course. My mobile is <span class="pii">+65 9123 4567</span> if a call is easier. I have attached my payment receipt.
+
+Thanks &amp; Regards,
+<span class="pii">Tan Mei Ling</span></pre></div>
+</div>
+<p>Limits are checked here: at most 256 KB per email, 1,000 characters of subject, 40,000 of body and 24 attachments. Anything over a limit is not sent; it goes to manual handling.</p>
+</div></div>
+
+<div class="step"><div class="num">3</div><div>
+<h3>Read attachments, black out, read again <span class="where">attachments.py</span></h3>
+<p>PNG and JPEG images are read with on-device OCR on the CPU; the OCR model files ship inside the package, so nothing is downloaded. PDFs use their text layer when there is one, otherwise each page is rendered and read with OCR (up to 10 pages, 8 MB, 12 seconds per attachment). Then:</p>
+<ul>
+<li>personal details are found in the OCR text and mapped back to their positions on the image;</li>
+<li>those areas are blacked out in the pixels;</li>
+<li>the blacked-out image is <strong>read again</strong>, and if any personal detail can still be read, the attachment is not used (<code>REDACTION_VERIFICATION_FAILED</code>);</li>
+<li>if the OCR is unsure (too little text, low confidence, non-Latin script), the attachment is not used either.</li>
+</ul>
+<p>Only text from an attachment that passed is sent on, and it is masked like the body. Other file types are listed as "attachment present, not read". File names, images and bytes never leave.</p>
+<pre>[attachment PRIVACY_VERIFIED, OCR]
+Payment receipt Paid by: <span class="pii">[[PII_PERSON_iAA6IZ2EZLYe_0002]]</span>: <span class="pii">[[PII_PHONE_iAA6IZ2EZLYe_0001]]</span> Amount: S$500.00 Reference: PAY-2026-0042</pre>
+</div></div>
+
+<div class="step"><div class="num">4</div><div>
+<h3>Mask personal details <span class="where">privacy.py · masking.py</span></h3>
+<p>Two detectors run on every text field (subject, body, attachment text, any thread or earlier issues RSTN supplies):</p>
+<ul>
+<li><strong>rules</strong> for emails, Singapore phone numbers, NRIC/FIN, and application, reference, account and payment numbers with a prefix;</li>
+<li><strong>name checks:</strong> a local English name recogniser (spaCy), plus rules for where names sit (after "Dear", in a sign-off, after "my name is", in a "Name:" field, after "Ms" or "Dr"), for name-shaped words (capitalised words in a row that aren't ordinary English, such as "Mei Xuan Koh"), and the sender's and recipients' own names from the email envelope.</li>
+</ul>
+<p>Each value is replaced by a placeholder such as <code>[[PII_PERSON_iAA6IZ2EZLYe_0001]]</code>. The same value gets the same placeholder throughout the email, so the engine can still tell that the phone in the body and the phone on the receipt are the same. The middle part is a per-email code computed from the idempotency key and a secret held only by the connector, so it can't be guessed, but a resend of the same email gets the same placeholders. The map from placeholder to real value stays in the connector's memory for this one request only.</p>
+<pre>{
+ "schemaVersion": "rstn-headless-http-v0",
+ "requestId": "rstn_req_bfb7bdc6a47195feea2d54701cf87e90",
+ "correlationId": "rstn_cor_bfb5668ccfa7b5cd219bf0c6d554fbb5",
+ "idempotencyKey": "rstn_idem_889f0d17e945a96bd9f93504353e3762",
+ "enquiry": {
+  "currentMessage": {
+   "subject": "Re: Enquiry about Advanced Professional Certificate in Data Science and AI",
+   "body": "Dear PaCE team,\n\nThank you for the details.\n\nI would like to know more about the funding options for this course. My mobile is <span class="pii">[[PII_PHONE_iAA6IZ2EZLYe_0001]]</span> if a call is easier. I have attached my payment receipt.\n\nThanks &amp; Regards,\n<span class="pii">[[PII_PERSON_iAA6IZ2EZLYe_0001]]</span>"
+  },
+  "permittedThread": [], "priorIssues": [],
+  "attachmentEvidence": [ { "attachmentId": "mime-attachment-001", "excerpt": "Payment receipt Paid by: <span class="pii">[[PII_PERSON_…_0002]]</span>: …", "processingStatus": "PRIVACY_VERIFIED", … } ]
+ }
+}</pre>
+<p>This is the complete request that leaves the NTU side. Running the connector with <code>--show-masked</code> adds it to each answer, so testers can check it themselves.</p>
+</div></div>
+
+<div class="step"><div class="num">5</div><div>
+<h3>Independent egress check <span class="where">privacy.py: EgressPrivacySentinel</span></h3>
+<p>Just before sending, a second checker scans every string in the outgoing JSON. It doesn't use the name recogniser, so a recogniser miss is not automatically a miss here. It looks for anything that still looks like an email, a phone number or an ID number. It also checks for a person's name left in a name position, a name-shaped run of words, the sender's or a recipient's name, or a capitalised word next to a masked name. If it finds one, nothing is sent and the email goes to manual handling with <code>EGRESS_PRIVACY_CHECK_FAILED</code>.</p>
+<div class="note"><strong>Changed on 15 Oct:</strong> the check used to treat any two capitalised words in a row as a possible name, so it blocked most ordinary emails ("Applied Data", "Dear Sir"). On 91 made-up enquiries it now blocks none (was 73), and no name leaves unmasked (was 4 of 122). Names that are ordinary English words and stand alone without a cue ("please ask Hope") can still pass. Measured with <code>benchmarks/egress_rates.py</code>; see <code>benchmarks/README.md</code>.</div>
+</div></div>
+
+<div class="step"><div class="num">6</div><div>
+<h3>Call the engine <span class="where">client.py</span></h3>
+<p>One HTTPS call to the engine with the API key, waiting for the result. If the engine is briefly unavailable or busy (5xx, 429), the connector retries a few times with the same idempotency key, so the engine never runs the same email twice. The engine works only on the masked text. It returns one or more issues, each with a recommended action (ANSWER, CLARIFY, HANDOFF or MANUAL_REVIEW), the owning team, the evidence it used, a draft reply and a verification status, all still containing placeholders.</p>
+</div></div>
+
+<div class="step"><div class="num">7</div><div>
+<h3>Restore names, locally <span class="where">service.py</span></h3>
+<p>The connector puts the real values back into every text field of the result: the reply draft, issue summaries and handoff notes. This uses the in-memory map from step 4, which is then dropped. If the engine shortened a text and cut a placeholder in half, the fragment is removed rather than shown.</p>
+<div class="cols">
+<div><div class="label">From the engine</div>
+<pre>"summary": "… My mobile is <span class="pii">[[PII_PHONE_iAA6IZ2EZLYe_0001]]</span> if a call is easier. …"</pre></div>
+<div><div class="label">Returned to RSTN</div>
+<pre>"summary": "… My mobile is <span class="pii">+65 9123 4567</span> if a call is easier. …"</pre></div>
+</div>
+</div></div>
+
+<div class="step"><div class="num">8</div><div>
+<h3>Answer RSTN's system <span class="where">server.py</span></h3>
+<p>Always HTTP 200 once the email has been processed, either <code>COMPLETED</code> or <code>REQUIRES_MANUAL_HANDLING</code> with a reason code. The Graph IDs are echoed back so RSTN can match the answer to the message and conversation.</p>
+<pre>{
+ "schemaVersion": "pace-connector-http-v0",
+ "status": "COMPLETED",
+ "failure": null,
+ "message": { "id": "AAMkAExample0002", "internetMessageId": "&lt;example-002@example.test&gt;", "conversationId": "AAQkAExampleConversation0001" },
+ "result": {
+   "issues": [ { "issueId": "ISSUE-001", "recommendedAction": "MANUAL_REVIEW", "summary": "…", "owner": null, … } ],
+   "verification": { "status": "SAFE_TO_REVIEW", "findings": [] },
+   "handoff": [], …
+ },
+ "reply": { "subject": "Response to your enquiry", "body": "Regarding your payment status, we're unable to confirm this from the information currently available. …" }
+}</pre>
+</div></div>
+
+<h2 id="never">3. What never leaves the NTU side</h2>
+<div class="tablewrap"><table>
+<tr><th>Item</th><th>What happens to it</th></tr>
+<tr><td>Sender and recipient names and addresses</td><td>Read from Graph or headers, kept local, never put in the request.</td></tr>
+<tr><td>Graph message, conversation and Internet message IDs</td><td>Kept local and echoed back to RSTN only. The engine gets derived opaque IDs.</td></tr>
+<tr><td>Quoted earlier messages</td><td>Cut before masking and not sent.</td></tr>
+<tr><td>Attachment files, file names, images</td><td>Read in memory. Only verified, masked text from them is sent.</td></tr>
+<tr><td>Personal details in the text</td><td>Replaced by placeholders before sending.</td></tr>
+<tr><td>The placeholder map</td><td>In memory for one request, then discarded. Never written to disk or logs.</td></tr>
+<tr><td>Logs</td><td>The HTTP log has the request line and status only, never bodies.</td></tr>
+</table></div>
+
+<h2 id="fail">4. When it stops an email</h2>
+<p>The connector fails closed: when it can't be sure an email is safe to send, it sends nothing and returns <code>REQUIRES_MANUAL_HANDLING</code> with one of these codes, so a person handles the email as today.</p>
+<div class="tablewrap"><table>
+<tr><th>Code</th><th>Meaning</th></tr>
+<tr><td><code>MALFORMED_EMAIL</code> · <code>BODY_UNAVAILABLE</code></td><td>Not a valid Graph message or email, or no readable body.</td></tr>
+<tr><td><code>REQUEST_LIMIT_EXCEEDED</code> · <code>ATTACHMENT_LIMIT_EXCEEDED</code></td><td>Too large, or too many attachments.</td></tr>
+<tr><td><code>PRIVACY_SCOPE_UNSUPPORTED</code></td><td>Text outside the English/Latin-script scope of phase 1.</td></tr>
+<tr><td><code>MASKING_FAILURE</code> · <code>PRIVACY_DETECTOR_FAILURE</code></td><td>Masking could not complete.</td></tr>
+<tr><td><code>EGRESS_PRIVACY_CHECK_FAILED</code></td><td>The independent check still saw something personal.</td></tr>
+<tr><td><code>ENGINE_UNAVAILABLE</code> · <code>RATE_LIMITED</code></td><td>The engine could not be reached, or is busy, after retries.</td></tr>
+<tr><td><code>AUTHENTICATION_FAILURE</code> · <code>ENGINE_CONTRACT_REJECTED</code> · <code>IDEMPOTENCY_CONFLICT</code></td><td>Setup problems: wrong key, version mismatch, or the same key reused for a different email.</td></tr>
+</table></div>
+<p>An attachment that can't be read safely doesn't stop the email. It is sent as "attachment present, not read", and the engine takes that into account.</p>
+
+<h2 id="code">5. Where each step lives in the code</h2>
+<div class="tablewrap"><table>
+<tr><th>File</th><th>Role</th></tr>
+<tr><td><code>server.py</code></td><td>HTTP mode for RSTN's system: <code>POST /v0/messages</code>, <code>GET /v0/health</code>, ID derivation, optional <code>x-api-key</code>.</td></tr>
+<tr><td><code>service.py</code></td><td><code>MimePrivacyConnector.process()</code>: runs steps 2–7 in order and turns any error into manual handling.</td></tr>
+<tr><td><code>graph.py</code></td><td>Microsoft Graph message → parsed email (body, quote cut, attachments from <code>contentBytes</code>).</td></tr>
+<tr><td><code>mime.py</code></td><td>Raw <code>.eml</code> → parsed email; HTML to text; quote detection shared with Graph.</td></tr>
+<tr><td><code>attachments.py</code></td><td>PDF text layer, OCR, blackout, verification OCR, limits.</td></tr>
+<tr><td><code>privacy.py</code></td><td>The masking detector (rules + name recogniser) and the separate egress sentinel.</td></tr>
+<tr><td><code>names.py</code></td><td>Name rules shared by masking and the egress check: name positions, name-shaped words, the sender's own name.</td></tr>
+<tr><td><code>masking.py</code></td><td>Placeholders, per-request map, keyed per-email code, restore.</td></tr>
+<tr><td><code>client.py</code></td><td>Engine call with key, timeout and safe retries.</td></tr>
+<tr><td><code>contracts.py</code> · <code>errors.py</code></td><td>Input/result types, limits and the failure codes above.</td></tr>
+</table></div>
+
+<h2 id="run">6. Running it</h2>
+<pre># install (Python 3.10–3.12, CPU only)
+python3 -m venv .venv &amp;&amp; .venv/bin/pip install "pace-connector @ git+https://github.com/synvo-ai/pace-connector.git"
+# or, from a checkout of the repo: .venv/bin/pip install -e .
+
+# one email, printed step by step
+PYTHONPATH=. .venv/bin/python examples/run_one.py examples/graph_with_attachment.json --api-key &lt;engine key&gt;
+
+# HTTP mode, as RSTN would run it
+PACE_ENGINE_API_KEY=&lt;engine key&gt; PACE_CONNECTOR_NONCE_SECRET=&lt;random secret&gt; \
+  .venv/bin/python -m pace_connector.server --engine-url &lt;engine URL&gt; --port 8788
+curl -s -H 'content-type: application/json' --data-binary @examples/graph_message.json http://127.0.0.1:8788/v0/messages</pre>
+<p>Settings: <code>PACE_ENGINE_API_KEY</code> (required), <code>PACE_CONNECTOR_NONCE_SECRET</code> (keep it the same across restarts so resends still match), <code>PACE_CONNECTOR_API_KEY</code> (if set, RSTN's system must send it as <code>x-api-key</code>), <code>--host</code> (127.0.0.1 by default), <code>--show-masked</code> (testing only).</p>
+
+<h2 id="gaps">7. Known gaps (15 Oct)</h2>
+<ul>
+<li><strong>Programme words:</strong> a Title Case programme name with a word the connector doesn't know can be masked as a name, which hides it from the engine. The words of NTU's real programme titles must be added to the connector's public word list before real data.</li>
+<li><strong>Follow-up emails:</strong> the quoted history is cut and not sent, so on a follow-up the engine sees only the newest message. Earlier turns can be passed as a thread and earlier issues in the library call, but the HTTP mode doesn't accept them yet. To agree with RSTN: do they send the earlier messages of a conversation, or should the connector use the quote?</li>
+<li><strong>Joined OCR lines:</strong> attachment text is joined with spaces, so a label after a name can be masked together with it ("Tan Mei Ling Mobile"). This errs on the safe side.</li>
+<li><strong>Packaging:</strong> a wheel with pinned versions and bundled model files for machines without internet; a version check against the engine.</li>
+<li><strong>Data label:</strong> requests are marked <code>SYNTHETIC_TEST_DATA</code>; this must become configurable before any real email is used.</li>
+</ul>
+</main>
+</body>
+</html>

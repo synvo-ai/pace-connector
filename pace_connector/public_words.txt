@@ -1,0 +1,21 @@
+# Words that are public in PaCE email but missing from the English word list: institutions,
+# schemes, places, languages, months and course-subject words. Connector-owned configuration,
+# like public_institutional_entities.v1.json. Never add a person's name here.
+# Add the words of every programme title in the real NTU catalogue (A4) before live data.
+january february march april may june july august september october november december
+monday tuesday wednesday thursday friday saturday sunday
+ntu nus smu sutd sit suss nie pace nanyang technological university singapore singaporean
+skillsfuture fleximasters ntuc ocbc uob dbs astar a*star sfec ssg wsg hdb sgx nlb paynow paylah giro gst wsq ibf imda moe moh mom iras cpf
+malaysia malaysian indonesia indonesian jakarta china chinese india indian philippines filipino
+vietnam vietnamese thailand thai myanmar japan japanese korea korean australia australian
+english malay tamil mandarin hokkien cantonese europe european asia asian america american
+britain british london hari raya puasa haji deepavali christmas easter vesak ramadan lunar
+jurong tampines woodlands changi sentosa orchard bugis buona vista one-north novena clementi
+yunnan ngee ann temasek nanyang republic polytechnic ite ang mo kio bishan bedok toa payoh pasir ris punggol sengkang yishun hougang serangoon tiong bahru bukit timah batok panjang
+terima kasih assalamualaikum salam selamat
+analytics cybersecurity infocomm masterclass fintech mechatronics biomaterials biomedical nanotechnology
+blockchain e-learning elearning online asynchronous synchronous microcredential microcredentials
+ux ui iot ai ml devops cloud dataset datasets edtech healthtech proptech regtech
+linkedin zoom teams outlook gmail whatsapp telegram microsoft google apple android ios
+excel powerpoint python java javascript sql tableau power-bi unity blender autocad
+macbook iphone ipad laptop wifi covid

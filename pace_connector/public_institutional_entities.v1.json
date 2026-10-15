@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "rstn-public-entity-registry-v1",
+  "registryId": "rstn-poc-synthetic-public-institutional-entities",
+  "registryVersion": "1.1.0",
+  "provenance": {
+    "kind": "CONNECTOR_OWNED_DERIVED_PUBLIC_ENTITY_ADAPTER",
+    "sourceWorldDigest": "f9a84c3e1e65e3736ec0ac65da9971d840c0eb889ae4722ff07c50221c06ec4f",
+    "sourceRegistry": "rstnPocSyntheticProgrammeRegistry / controlled institutional services",
+    "syntheticOnly": true
+  },
+  "entities": [
+    {"controlledId": "DATA_ANALYTICS_CERT", "displayName": "Data Analytics Certificate", "aliases": ["Data Analytics Certificate", "DAC", "Analytics certificate"]},
+    {"controlledId": "PRODUCT_DESIGN_CERT", "displayName": "Product Design Certificate", "aliases": ["Product Design Certificate", "PDC", "Design certificate"]},
+    {"controlledId": "CYBERSECURITY_FOUNDATIONS", "displayName": "Cybersecurity Foundations", "aliases": ["Cybersecurity Foundations", "Cyber Foundations", "CSF"]},
+    {"controlledId": "APPLIED_AI_FOUNDATIONS", "displayName": "Applied AI Foundations", "aliases": ["Applied AI Foundations", "Applied AI Certificate"]},
+    {"controlledId": "APPLIED_AI_BUSINESS", "displayName": "Applied AI for Business", "aliases": ["Applied AI for Business", "Applied AI Certificate"]},
+    {"controlledId": "CORPORATE_LEARNING", "displayName": "Corporate learning enquiry", "aliases": ["Corporate learning", "Group learning"]},
+    {"controlledId": "WITHDRAWN_CLOUD_OPERATIONS", "displayName": "Cloud Operations archive", "aliases": ["Cloud Operations"]},
+    {"controlledId": "RSTN_PROGRAMME_SERVICES", "displayName": "Synthetic Programme Services", "aliases": ["Programme Services"]},
+    {"controlledId": "RSTN_ADMISSIONS", "displayName": "Synthetic Admissions", "aliases": ["Admissions"]},
+    {"controlledId": "RSTN_FINANCE_SUPPORT", "displayName": "Synthetic Finance Support", "aliases": ["Finance Support"]},
+    {"controlledId": "RSTN_CORPORATE_LEARNING", "displayName": "Synthetic Corporate Learning", "aliases": ["Corporate Learning"]},
+    {"controlledId": "RSTN_CREDIT_REVIEW", "displayName": "Synthetic Credit Review", "aliases": ["Credit Review"]},
+    {"controlledId": "RSTN_ACADEMIC_RECORDS", "displayName": "Synthetic Academic Records", "aliases": ["Academic Records"]},
+    {"controlledId": "RSTN_INSTITUTION", "displayName": "Nanyang Technological University", "aliases": ["NTU", "PaCE", "Nanyang Technological University", "Nanyang Business School", "Advanced Professional Certificate in Data Science and AI"]}
+  ]
+}
