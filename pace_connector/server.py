@@ -36,6 +36,7 @@ from .errors import ConnectorError
 from .graph import graph_refs, load_graph_message, parse_graph_message
 from .mime import parse_rfc5322
 from .service import MimePrivacyConnector
+from urllib.parse import urlsplit
 
 SERVER_SCHEMA_VERSION = "pace-connector-http-v0"
 _MAX_BODY_BYTES = ConnectorLimits().max_raw_bytes * 2
@@ -225,6 +226,9 @@ def main(argv: list[str] | None = None) -> None:
         # Without a fixed secret, a resend after a restart is masked differently and the engine
         # rejects it as IDEMPOTENCY_CONFLICT.
         parser.error("set PACE_CONNECTOR_NONCE_SECRET to a random string of at least 16 characters, and keep it across restarts")
+    engine = urlsplit(args.engine_url)
+    if engine.scheme not in ("http", "https") or not engine.hostname:
+        parser.error(f"--engine-url must be a full URL such as https://asr.corp.synvo.ai, not {args.engine_url!r}")
 
     ConnectorHandler.connector = MimePrivacyConnector(LocalHttpEngineClient(args.engine_url, engine_key, timeout_seconds=args.engine_timeout))
     ConnectorHandler.api_key = os.environ.get("PACE_CONNECTOR_API_KEY") or None
