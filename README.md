@@ -125,6 +125,12 @@ result = connector.process(ConnectorInput(b"", **message_ids("graph:" + graph_id
 # result.status, result.failure, result.restored_result, result.restored_reply
 ```
 
+`examples/three_steps.py` shows one email in three steps, mask, send and receive, reveal, and writes the evidence (the image before and after blackout, the exact masked request, the engine's answer, the revealed result) with an `index.html` to view it:
+
+```
+.venv/bin/python examples/three_steps.py examples/graph_with_attachment.json --engine-url <engine URL> --api-key <engine key> --out three-steps
+```
+
 `examples/run_one.py` runs one email and prints each step:
 
 ```
@@ -133,7 +139,7 @@ result = connector.process(ConnectorInput(b"", **message_ids("graph:" + graph_id
 
 ## What is masked, and limits
 
-- **Structural details:** email addresses, Singapore phone numbers, NRIC/FIN, and prefixed application, reference, account and payment numbers.
+- **Structural details:** email addresses, Singapore phone numbers, NRIC/FIN, and reference codes such as payment, receipt and application numbers (capitals and hyphens with a group of 3+ digits, e.g. `PAY-2026-0042`).
 - **Names:** a local English name recogniser (spaCy), plus rules:
   - names in name positions: after "Dear", in a sign-off, after "my name is", in a "Name:" field, after a title;
   - name-shaped words: capitalised words in a row that are not ordinary English;

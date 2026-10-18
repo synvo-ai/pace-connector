@@ -46,6 +46,9 @@ _STRUCTURAL_PATTERNS: tuple[tuple[PiiCategory, re.Pattern[str]], ...] = (
     # amounts are not identifiers merely because they contain a number.
     ("SYNTHETIC_ID", re.compile(r"\bSYN\s*-\s*[A-Z]{2,8}\s*-\s*\d{2,12}\b", re.IGNORECASE)),
     ("REFERENCE", re.compile(r"\b(?:APPLICATION\s*:\s*APP|REFERENCE\s+REF)(?:\s*-\s*|\s+)\w{2,12}(?:\s*-\s*|\s+)\d{2,12}\b", re.IGNORECASE)),
+    # Payment, receipt and application codes: capitals, hyphens and a group of 3+ digits
+    # (PAY-2026-0042, PACE-GCADA-2026-11903). Programme codes without digits (GC-ADA) and dates stay.
+    ("REFERENCE", re.compile(r"\b[A-Z]{2,10}(?:-[A-Z0-9]{1,12})*-\d{3,12}\b")),
 )
 _FIXTURE_PERSON = re.compile(r"\b(?:Alice|Bob|Carol)\s+Example\b")
 # This is institutional configuration, not a qualification-fixture allowlist.
