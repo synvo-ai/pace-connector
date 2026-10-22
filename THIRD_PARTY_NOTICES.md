@@ -33,6 +33,6 @@ The connector's own code is covered by `LICENSE`. The components below keep thei
 
 | Files | Licence |
 |---|---|
-| The detail model (`model_q4.onnx`, `model_q4.onnx_data`, `tokenizer.json`, `config.json`), in the folder given by `PACE_DETAIL_MODEL_DIR` | Apache-2.0; supplied by Synvo with its licence and notices |
+| The detail model: OpenAI Privacy Filter (`openai/privacy-filter`, 4-bit ONNX export: `model_q4.onnx`, `model_q4.onnx_data`, `tokenizer.json`, `config.json`), downloaded by `python -m pace_connector.fetch_model` from the `detail-model-v1` release | Apache-2.0; its `LICENSE` and `NOTICE` are downloaded into the same folder |
 
 Optional extras: PaddleOCR and PaddlePaddle (`[paddle]`, Apache-2.0); reportlab and pypdf (`[test]`, BSD).

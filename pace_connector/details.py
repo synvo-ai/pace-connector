@@ -6,7 +6,7 @@ structural rules do not cover (other countries, written out in words). Names sta
 name model and the rules in `names`.
 
 The detector is a token classifier run on the CPU with onnxruntime and tokenizers (4-bit weights,
-about 0.9 GB, about 0.15 s per email on 4 cores). Its files are not in the package: they live in
+about 0.9 GB, about 0.15 s per email on 4 cores). Its files are not in the package (`python -m pace_connector.fetch_model` downloads them): they live in
 a folder given by `PACE_DETAIL_MODEL_DIR` (default `~/.cache/pace-connector/detail-model`) and
 are checked against pinned SHA-256 digests. A missing or changed file fails closed, as a missing
 name model does.

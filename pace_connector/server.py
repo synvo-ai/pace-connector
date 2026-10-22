@@ -30,6 +30,7 @@ import json
 import os
 from typing import Any
 
+from . import details
 from .client import LocalHttpEngineClient
 from .contracts import CONNECTOR_CONTRACT_VERSION, ConnectorInput, ConnectorLimits, PriorIssue, ThreadMessage
 from .errors import ConnectorError
@@ -229,6 +230,10 @@ def main(argv: list[str] | None = None) -> None:
     engine = urlsplit(args.engine_url)
     if engine.scheme not in ("http", "https") or not engine.hostname:
         parser.error(f"--engine-url must be a full URL such as https://pace.corp.synvo.ai, not {args.engine_url!r}")
+    missing = [name for name in details.MODEL_FILES if not (details.model_dir() / name).is_file()]
+    if missing:
+        parser.error(f"the detail model is not in {details.model_dir()} (missing {', '.join(missing)}): "
+                     "download it with `python -m pace_connector.fetch_model` (0.9 GB), or set PACE_DETAIL_MODEL_DIR to its folder")
 
     ConnectorHandler.connector = MimePrivacyConnector(LocalHttpEngineClient(args.engine_url, engine_key, timeout_seconds=args.engine_timeout))
     ConnectorHandler.api_key = os.environ.get("PACE_CONNECTOR_API_KEY") or None

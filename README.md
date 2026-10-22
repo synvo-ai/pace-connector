@@ -22,7 +22,13 @@ python3 -m venv .venv
 
 From a checkout: `.venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -e .` (add `[test]` to run the tests). The extra index gives the CPU build of PyTorch, which the name model needs; without it pip installs a much larger GPU build that the connector does not use.
 
-The OCR models ship inside the package and the name model is installed with it. The **detail model** (addresses, dates of birth and numbers; about 0.9 GB) is supplied by Synvo as a folder of four files. Put it in `~/.cache/pace-connector/detail-model`, or set `PACE_DETAIL_MODEL_DIR` to its folder. The connector checks each file against a pinned digest, and does not start masking without it.
+The OCR models ship inside the package and the name model is installed with it. The **detail model** (addresses, dates of birth and numbers; about 0.9 GB) is downloaded once, with its licence:
+
+```
+.venv/bin/python -m pace_connector.fetch_model
+```
+
+It goes to `~/.cache/pace-connector/detail-model`, or to the folder in `PACE_DETAIL_MODEL_DIR`. It is OpenAI Privacy Filter (Apache 2.0), as a 4-bit ONNX export run on the CPU, from this repository's `detail-model-v1` release. Without internet access, copy that folder from another machine, or point `PACE_DETAIL_MODEL_URL` at an internal mirror of the release files. The connector checks each file against a pinned digest, and does not start without the model.
 
 ## Run as a local HTTP service
 
