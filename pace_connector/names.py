@@ -128,7 +128,14 @@ def _joins(text: str, previous: str, previous_end: int, start: int) -> bool:
 
 
 def _tokens(text: str) -> list[tuple[str, int, int]]:
-    return [(match.group(), match.start(), match.end()) for match in _TOKEN.finditer(text)]
+    """Words, with a possessive cut off: "Haoran's" is the name "Haoran"."""
+    tokens = []
+    for match in _TOKEN.finditer(text):
+        word, end = match.group(), match.end()
+        if len(word) > 3 and word[-2] in "'’" and word[-1] in "sS":
+            word, end = word[:-2], end - 2
+        tokens.append((word, match.start(), end))
+    return tokens
 
 
 def _name_tokens(who: str, offset: int) -> list[tuple[int, int]] | None:
@@ -327,5 +334,6 @@ def known_name_spans(text: str, terms: Iterable[str]) -> list[tuple[int, int]]:
     spans: list[tuple[int, int]] = []
     for term in terms:
         pattern = r"[ \t]+".join(re.escape(word) for word in term.split())
-        spans.extend((match.start(), match.end()) for match in re.finditer(rf"(?<![\w'’-]){pattern}(?![\w'’-])", text, re.IGNORECASE))
+        # A possessive ends the name: "Wang Haoran's application".
+        spans.extend((match.start(), match.end()) for match in re.finditer(rf"(?<![\w'’-]){pattern}(?=['’]s\b|[^\w'’-]|$)", text, re.IGNORECASE))
     return spans
