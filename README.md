@@ -4,7 +4,7 @@ The privacy connector for the NTU PaCE enquiry engine. It runs inside the NTU/RS
 
 1. reads the email: a Microsoft Graph message (JSON) or a raw `.eml`;
 2. reads attachments locally: PNG and JPEG with on-device OCR, PDF from the text layer or OCR;
-3. masks personal details: names, email addresses, phone numbers, NRIC/FIN and reference numbers become placeholders such as `[[PII_PERSON_…_0001]]`, and personal details in images are blacked out and read again to check;
+3. masks personal details: names, addresses, dates of birth, email addresses, phone numbers, NRIC/FIN, passport, student, bank and card numbers, links to a person's own pages, passwords and reference numbers become placeholders such as `[[PII_PERSON_…_0001]]` or `[[PII_ADDRESS_…_0001]]`, and personal details in images are blacked out and read again to check;
 4. checks the outgoing request a second time, and sends nothing if a personal detail is still visible;
 5. sends only the masked request to the engine;
 6. puts the real values back into the engine's result, locally.
@@ -13,14 +13,16 @@ Raw email, attachments, sender details and the placeholder map never leave the c
 
 ## Install
 
-Python 3.10–3.12, CPU only, Linux or macOS. The OCR model files ship inside the package; nothing is downloaded at run time except the dependencies themselves.
+Python 3.10–3.12, CPU only, Linux or macOS. The connector process uses up to about 3 GB of memory (allow 4 GB) and about 4 GB of disk. Nothing is downloaded at run time.
 
 ```
 python3 -m venv .venv
-.venv/bin/pip install "pace-connector @ git+https://github.com/synvo-ai/pace-connector.git"
+.venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu "pace-connector @ git+https://github.com/synvo-ai/pace-connector.git"
 ```
 
-From a checkout: `.venv/bin/pip install -e .` (add `[test]` to run the tests).
+From a checkout: `.venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -e .` (add `[test]` to run the tests). The extra index gives the CPU build of PyTorch, which the name model needs; without it pip installs a much larger GPU build that the connector does not use.
+
+The OCR models ship inside the package and the name model is installed with it. The **detail model** (addresses, dates of birth and numbers; about 0.9 GB) is supplied by Synvo as a folder of four files. Put it in `~/.cache/pace-connector/detail-model`, or set `PACE_DETAIL_MODEL_DIR` to its folder. The connector checks each file against a pinned digest, and does not start masking without it.
 
 ## Run as a local HTTP service
 
@@ -139,12 +141,14 @@ result = connector.process(ConnectorInput(b"", **message_ids("graph:" + graph_id
 
 ## What is masked, and limits
 
-- **Structural details:** email addresses, Singapore phone numbers, NRIC/FIN, and reference codes such as payment, receipt and application numbers (capitals and hyphens with a group of 3+ digits, e.g. `PAY-2026-0042`).
-- **Names:** a local English name recogniser (spaCy), plus rules:
+- **Structural details:** email addresses, Singapore phone numbers, NRIC/FIN, NTU matriculation numbers, and reference codes such as payment, receipt and application numbers (capitals and hyphens with a group of 3+ digits, e.g. `PAY-2026-0042`); a student, passport or account number after its label; a password after "password".
+- **Other personal details:** a local detail model finds addresses in any country, dates of birth, passport, bank and card numbers, phone numbers from other countries, email addresses written in words, links to a person's own pages (LinkedIn, GitHub) and passwords. Public details stay readable: a date counts only after "date of birth", "DOB" or "born", so intake dates and deadlines stay; PaCE's and NTU's own addresses stay (`PUBLIC_POSTAL_CODES` in `pace_connector/details.py`); course codes stay.
+- **Names:** a local English name recogniser (spaCy, transformer model), plus rules:
   - names in name positions: after "Dear", in a sign-off, after "my name is", in a "Name:" field, after a title;
   - name-shaped words: capitalised words in a row that are not ordinary English;
   - the sender's and recipients' own names from the email envelope.
-- **Names that are also ordinary English words,** written alone with no cue ("please ask Hope"), can be missed.
+- **Names that are also ordinary English words,** written alone with no cue ("please pass my thanks to Hope"), can be missed.
+- **Second check:** before sending, the request is checked again without the models, by rules: names in name positions, structural details, and addresses with a unit number or postal code, phone numbers with a country code, dates after "date of birth", and card numbers.
 - **Programme titles:** a Title Case programme title containing a word the connector does not know can be masked as a name. Add such words to `pace_connector/public_words.txt`.
 - **English only.** Text in other scripts is not sent; the email goes to manual handling.
 - **Follow-ups:** quoted history in the body is cut and not sent. Without an envelope, the engine sees only the newest message.
@@ -154,7 +158,7 @@ How these were measured: `benchmarks/README.md`.
 ## Tests
 
 ```
-.venv/bin/pip install -e ".[test]"
+.venv/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[test]"
 PYTHONPATH=.:tests .venv/bin/python -m pytest -q tests
 ```
 

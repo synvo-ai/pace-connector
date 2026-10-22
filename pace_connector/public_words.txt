@@ -19,3 +19,5 @@ ux ui iot ai ml devops cloud dataset datasets edtech healthtech proptech regtech
 linkedin zoom teams outlook gmail whatsapp telegram microsoft google apple android ios
 excel powerpoint python java javascript sql tableau power-bi unity blender autocad
 macbook iphone ipad laptop wifi covid
+# Words of programme titles (until the NTU catalogue, A4, is added): a one-word name hit on them is not a name.
+diploma certificate graduate specialist professional executive advanced foundation masters msc mba informatics

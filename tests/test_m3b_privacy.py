@@ -67,7 +67,7 @@ class LocalPrivacyDetectorTests(unittest.TestCase):
         self.assertEqual(public_institutional_entity_registry_provenance(), {
             "schemaVersion": "rstn-public-entity-registry-v1",
             "registryId": "rstn-poc-synthetic-public-institutional-entities",
-            "registryVersion": "1.1.0",
+            "registryVersion": "1.2.0",
             "sourceWorldDigest": "f9a84c3e1e65e3736ec0ac65da9971d840c0eb889ae4722ff07c50221c06ec4f",
         })
 

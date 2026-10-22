@@ -1,6 +1,6 @@
 """Measure the two privacy rates on `egress_corpus`: ordinary emails blocked, and names missed.
 
-    PYTHONPATH=. .venv/bin/python benchmarks/egress_rates.py [--verbose] [--spacy-model en_core_web_trf]
+    PYTHONPATH=. .venv/bin/python benchmarks/egress_rates.py [--verbose] [--spacy-model en_core_web_sm]
 
 A name counts as missed when it, or any of its words that is not also an English word, is in
 the masked request (titles and bin/binte/s/o excluded). A missed name in a blocked email went to Manual handling; in a sent email it
@@ -91,7 +91,7 @@ def _report(label: str, result: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--spacy-model", default="en_core_web_sm", help="e.g. en_core_web_trf (install it first)")
+    parser.add_argument("--spacy-model", default="en_core_web_trf", help="the name model; en_core_web_sm before 22 Oct")
     args = parser.parse_args()
     detector = LocalPrivacyDetector(args.spacy_model)
     _report("dev (mock emails, two integration-shaped samples, examples)", run(dev_cases(), detector, args.verbose))

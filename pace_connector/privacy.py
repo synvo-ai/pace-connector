@@ -16,10 +16,12 @@ import re
 from typing import Any, Iterable, Literal, Protocol
 import unicodedata
 
-from . import names
+from . import details, names
 from .errors import EgressPrivacyCheckFailedError, PrivacyDetectorFailureError, PrivacyScopeUnsupportedError
 
-PiiCategory = Literal["EMAIL", "PHONE", "NRIC_FIN", "REFERENCE", "SYNTHETIC_ID", "PERSON"]
+PiiCategory = Literal["EMAIL", "PHONE", "NRIC_FIN", "REFERENCE", "SYNTHETIC_ID", "PERSON", "ADDRESS", "DATE_OF_BIRTH", "ID_NUMBER", "URL", "SECRET"]
+# The category kept when findings overlap: the more specific first.
+_PRIORITY = {"SYNTHETIC_ID": 0, "EMAIL": 1, "PHONE": 1, "NRIC_FIN": 1, "ID_NUMBER": 2, "REFERENCE": 2, "DATE_OF_BIRTH": 2, "SECRET": 2, "URL": 3, "ADDRESS": 3, "PERSON": 4}
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,14 @@ _STRUCTURAL_PATTERNS: tuple[tuple[PiiCategory, re.Pattern[str]], ...] = (
     # Payment, receipt and application codes: capitals, hyphens and a group of 3+ digits
     # (PAY-2026-0042, PACE-GCADA-2026-11903). Programme codes without digits (GC-ADA) and dates stay.
     ("REFERENCE", re.compile(r"\b[A-Z]{2,10}(?:-[A-Z0-9]{1,12})*-\d{3,12}\b")),
+    # NTU matriculation numbers (U/N plus seven digits and a letter; the G form is a FIN above).
+    ("ID_NUMBER", re.compile(r"\b[UN]\d{7}[A-Z]\b", re.IGNORECASE)),
+)
+# A value after its label; only the value (group 1) is masked. A student, passport or account number
+# needs six or more digits; a password needs a digit or a symbol, so "my password is not working" stays.
+_CUED_PATTERNS: tuple[tuple[PiiCategory, re.Pattern[str]], ...] = (
+    ("ID_NUMBER", re.compile(r"\b(?:matric(?:ulation)?|student|passport|account|acct)\b(?:\s+(?:no\b\.?|number\b|num\b|id\b|card\b))?(?:\s+[a-z]+){0,2}?\s*(?:\bis\b|\bwas\b|:|#)?\s*([A-Z]{0,2}\d(?:[\d -]{4,22}\d)[A-Z]?)\b", re.IGNORECASE)),
+    ("SECRET", re.compile(r"\b(?:password|passcode|passwd|pwd)\b(?:\s+[a-z]+){0,4}?\s*(?:\bis\b|\bwas\b|:|=)\s*[\"“']?([^\s\"”']{4,64}?)[\"”'.,;)]*(?=\s|$)", re.IGNORECASE)),
 )
 _FIXTURE_PERSON = re.compile(r"\b(?:Alice|Bob|Carol)\s+Example\b")
 # This is institutional configuration, not a qualification-fixture allowlist.
@@ -143,7 +153,7 @@ _PUBLIC_CORRESPONDENCE_WORDS = frozenset({
     "redacted", "reference", "regards", "reply", "schedule", "science", "services", "status",
     "student", "team", "thank", "the", "training", "update", "you", "your",
 })
-_LOCAL_PLACEHOLDER = re.compile(r"\[\[PII_(?:PERSON|EMAIL|PHONE|NRIC_FIN|REFERENCE|SYNTHETIC_ID)_[A-Za-z0-9]{8,64}_\d{4}\]\]")
+_LOCAL_PLACEHOLDER = re.compile(r"\[\[PII_(?:PERSON|EMAIL|PHONE|NRIC_FIN|REFERENCE|SYNTHETIC_ID|ADDRESS|DATE_OF_BIRTH|ID_NUMBER|URL|SECRET)_[A-Za-z0-9]{8,64}_\d{4}\]\]")
 _PERSON_PLACEHOLDER = re.compile(r"\[\[PII_PERSON_[A-Za-z0-9]{8,64}_\d{4}\]\]")
 
 
@@ -195,6 +205,16 @@ def merge_person_findings(findings: Iterable[PiiFinding]) -> list[PiiFinding]:
     return [item for item in findings if item.category != "PERSON"] + merged
 
 
+def _finding_from_group(category: PiiCategory, match: re.Match[str], mapping: tuple[int, ...], original_length: int, detector: str) -> PiiFinding:
+    start, end = match.span(1)
+    if start >= len(mapping) or end <= start:
+        raise PrivacyDetectorFailureError()
+    original_start, original_end = mapping[start], mapping[end - 1] + 1
+    if not (0 <= original_start < original_end <= original_length):
+        raise PrivacyDetectorFailureError()
+    return PiiFinding(category, original_start, original_end, 1.0, detector)
+
+
 def _finding_from_normalised(category: PiiCategory, match: re.Match[str], mapping: tuple[int, ...], original_length: int, detector: str) -> PiiFinding:
     if match.start() >= len(mapping) or match.end() <= match.start():
         raise PrivacyDetectorFailureError()
@@ -223,14 +243,31 @@ class SyntheticFixturePrivacyDetector:
         return _deduplicate(findings)
 
 
+@lru_cache(maxsize=2)
+def _load_spacy(model_name: str):
+    import spacy
+    return spacy.load(model_name, disable=["tagger", "parser", "lemmatizer", "textcat"])
+
+
+def _value_digits(value: str) -> int:
+    return sum(character.isdigit() for character in value)
+
+
 class LocalPrivacyDetector:
-    """Primary detector: structural rules plus a pinned local spaCy English NER model."""
+    """Primary detector: structural rules, a pinned local spaCy English NER model for names, and
+    the local detail model (`details`) for addresses, dates of birth, numbers, links and secrets.
+
+    `detail_detector`: anything with `spans(text) -> [(start, end, category)]`; by default the
+    model in `PACE_DETAIL_MODEL_DIR`. Both models are loaded once per process.
+    """
 
     _structural_patterns = _STRUCTURAL_PATTERNS
-    def __init__(self, model_name: str = "en_core_web_sm") -> None:
+    def __init__(self, model_name: str = "en_core_web_trf", detail_detector: Any = None) -> None:
         try:
-            import spacy
-            self._nlp = spacy.load(model_name, disable=["tagger", "parser", "lemmatizer", "textcat"])
+            self._nlp = _load_spacy(model_name)
+            self._details = detail_detector if detail_detector is not None else details.load()
+        except PrivacyDetectorFailureError:
+            raise
         except Exception as error:
             raise PrivacyDetectorFailureError() from error
         if "ner" not in self._nlp.pipe_names:
@@ -249,6 +286,13 @@ class LocalPrivacyDetector:
             ]
             for match in _FIXTURE_PERSON.finditer(scanned):
                 findings.append(_finding_from_normalised("PERSON", match, mapping, len(text), "primary-fixture-person"))
+            for category, pattern in _CUED_PATTERNS:
+                for match in pattern.finditer(scanned):
+                    value = match.group(1)
+                    if (category == "ID_NUMBER" and _value_digits(value) < 6) or (category == "SECRET" and value.isalpha() and value.islower()):
+                        continue
+                    findings.append(_finding_from_group(category, match, mapping, len(text), "primary-cued"))
+            findings.extend(PiiFinding(category, start, end, .75, "local-detail-model") for start, end, category in self._details.spans(text))
             approved = _approved_entity_spans(scanned)
             for rule, detector in ((names.title_spans, "primary-title-person"), (names.position_spans, "primary-name-position"), (names.shape_spans, "primary-name-shape")):
                 for start, end in rule(scanned):
@@ -261,13 +305,14 @@ class LocalPrivacyDetector:
                 # A name does not run across a line break ("Li Ting\nFinance Executive").
                 start = entity.start_char + len(entity.text) - len(entity.text.lstrip())
                 end = start + len(text[start:entity.end_char].split("\n", 1)[0].rstrip())
-                words = text[start:end].split()
-                # One ordinary English word ("Algorithms", "May") is more often not a name.
-                if len(text[start:end]) < 3 or (len(words) == 1 and names.is_known_word(words[0])):
+                # A one-word name that is also an English word ("Mark", "Grace", or "rose" in a lower-case
+                # email) is kept: the transformer model rarely tags an ordinary word, and public words are
+                # excluded above. The few it does tag ("thanks") are masked; that is safe.
+                if len(text[start:end]) < 3:
                     continue
                 # spaCy often finds only part of a name ("Ong Hui Shan" of "Camellia Ong Hui Shan").
                 start, end = names.extend_span(text, start, end)
-                findings.append(PiiFinding("PERSON", start, end, .75, "spacy-en-core-web-sm"))
+                findings.append(PiiFinding("PERSON", start, end, .75, f"spacy-{self.model_name}"))
             people = [(item.start, item.end) for item in merge_person_findings(findings) if item.category == "PERSON"]
             findings.extend(PiiFinding("PERSON", start, end, .75, "primary-repeated-name") for start, end in names.repeated_name_spans(text, people))
             return _deduplicate(merge_person_findings(findings))
@@ -304,6 +349,8 @@ class EgressPrivacySentinel:
                 return True
             if not include_person:
                 return False
+            if _has_structured_detail(scanned):
+                return True
             # Name checks see a placeholder as a non-word mark, so lines and runs stay as written.
             marked = _LOCAL_PLACEHOLDER.sub("\ue001", with_placeholders)
             approved_spans = _approved_entity_spans(marked)
@@ -407,15 +454,25 @@ def _is_safe_enum(path: str, value: str) -> bool:
 
 
 def _deduplicate(findings: Iterable[PiiFinding]) -> tuple[PiiFinding, ...]:
-    selected: list[PiiFinding] = []
-    priority = {"SYNTHETIC_ID": 0, "EMAIL": 1, "PHONE": 1, "NRIC_FIN": 1, "REFERENCE": 2, "PERSON": 3}
-    for finding in sorted(findings, key=lambda item: (priority[item.category], item.start, -(item.end - item.start), item.detector)):
+    """One finding per run of overlapping findings, covering all of them, so a partial overlap cannot
+    leave part of a detail readable. It takes the most specific category in the run (`_PRIORITY`),
+    and a rule's category over a model's."""
+    runs: list[list[PiiFinding]] = []
+    run_end = -1
+    for finding in sorted(findings, key=lambda item: (item.start, -item.end)):
         if finding.start < 0 or finding.end <= finding.start:
             raise PrivacyDetectorFailureError()
-        if any(finding.start < existing.end and existing.start < finding.end for existing in selected):
-            continue
-        selected.append(finding)
-    return tuple(selected)
+        if runs and finding.start < run_end:
+            runs[-1].append(finding)
+            run_end = max(run_end, finding.end)
+        else:
+            runs.append([finding])
+            run_end = finding.end
+    merged = []
+    for run in runs:
+        lead = min(run, key=lambda item: (_PRIORITY[item.category], -item.confidence, -(item.end - item.start), item.detector))
+        merged.append(PiiFinding(lead.category, run[0].start, max(item.end for item in run), lead.confidence, lead.detector))
+    return tuple(merged)
 
 
 def _is_approved_public_fragment(value: str) -> bool:
@@ -446,6 +503,32 @@ def _matches_unapproved(pattern: re.Pattern[str], text: str, approved_spans: tup
         if not any(start <= match.start() and match.end() <= end for start, end in approved_spans):
             return True
     return False
+
+
+# Personal details the egress check can recognise without a model, in content fields only.
+_EGRESS_DETAIL_PATTERNS = (
+    re.compile(r"#\s?\d{1,3}\s?-\s?\d{1,5}\b[^\n]{0,60}?\b\d{6}\b"),  # a unit number followed by a postal code
+    re.compile(r"(?<![\w+])\+\s?\d{1,3}[\s-]?\(?\d{1,4}\)?(?:[\s-]?\d{2,6}){2,4}\b"),  # a phone number with a country code
+    re.compile(r"(?:date\s+of\s+birth|\bd\.?o\.?b\b|\bborn\b)[^\n\d]{0,20}\d{1,4}[\s./-]+(?:\d{1,2}|[a-z]{3,9})[\s./,-]+\d{2,4}\b", re.IGNORECASE),
+)
+_POSTAL_CODE = re.compile(r"\b(?:singapore|S)\s*\(?\s*(\d{6})\s*\)?(?!\d)", re.IGNORECASE)
+_CARD_NUMBER = re.compile(r"(?<![\d-])\d(?:[ -]?\d){12,18}(?![\d-])")
+
+
+def _luhn(digits: str) -> bool:
+    total = 0
+    for index, character in enumerate(reversed(digits)):
+        value = int(character) * (2 if index % 2 else 1)
+        total += value - 9 if value > 9 else value
+    return total % 10 == 0
+
+
+def _has_structured_detail(text: str) -> bool:
+    if any(pattern.search(text) for pattern in _EGRESS_DETAIL_PATTERNS):
+        return True
+    if any(match.group(1) not in details.PUBLIC_POSTAL_CODES for match in _POSTAL_CODE.finditer(text)):
+        return True
+    return any(_luhn(re.sub(r"\D", "", match.group())) for match in _CARD_NUMBER.finditer(text))
 
 
 _PERSON_WORD = re.compile(r"[^\W\d_][^\W\d_'’\-]*(?:['’\-][^\W\d_][^\W\d_'’\-]*)*", re.UNICODE)

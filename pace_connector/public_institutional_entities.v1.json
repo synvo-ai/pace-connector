@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rstn-public-entity-registry-v1",
   "registryId": "rstn-poc-synthetic-public-institutional-entities",
-  "registryVersion": "1.1.0",
+  "registryVersion": "1.2.0",
   "provenance": {
     "kind": "CONNECTOR_OWNED_DERIVED_PUBLIC_ENTITY_ADAPTER",
     "sourceWorldDigest": "f9a84c3e1e65e3736ec0ac65da9971d840c0eb889ae4722ff07c50221c06ec4f",
@@ -22,6 +22,7 @@
     {"controlledId": "RSTN_CORPORATE_LEARNING", "displayName": "Synthetic Corporate Learning", "aliases": ["Corporate Learning"]},
     {"controlledId": "RSTN_CREDIT_REVIEW", "displayName": "Synthetic Credit Review", "aliases": ["Credit Review"]},
     {"controlledId": "RSTN_ACADEMIC_RECORDS", "displayName": "Synthetic Academic Records", "aliases": ["Academic Records"]},
-    {"controlledId": "RSTN_INSTITUTION", "displayName": "Nanyang Technological University", "aliases": ["NTU", "PaCE", "Nanyang Technological University", "Nanyang Business School", "Advanced Professional Certificate in Data Science and AI"]}
+    {"controlledId": "RSTN_INSTITUTION", "displayName": "Nanyang Technological University", "aliases": ["NTU", "PaCE", "Nanyang Technological University", "Nanyang Business School", "Advanced Professional Certificate in Data Science and AI"]},
+    {"controlledId": "SINGAPORE_PUBLIC_PLACES", "displayName": "Choa Chu Kang", "aliases": ["Choa Chu Kang", "Yio Chu Kang", "Lim Chu Kang", "Tan Kah Kee", "Kent Ridge", "Boon Lay", "Hwa Chong Institution", "Raffles Institution", "Lee Kong Chian School of Medicine", "Tan Tock Seng Hospital", "Khoo Teck Puat Hospital", "Ng Teng Fong General Hospital", "Nanyang Executive Centre", "Lee Kuan Yew School of Public Policy"]}
   ]
 }

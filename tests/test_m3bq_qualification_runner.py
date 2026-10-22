@@ -29,7 +29,7 @@ class M3BQQualificationRunnerTests(unittest.TestCase):
             with self.subTest(category=category):
                 actual = results["categories"][category]
                 self.assertEqual({key: actual[key] for key in values}, values)
-        self.assertGreater(results["categories"]["PERSON"]["primary_routes"].get("spacy-en-core-web-sm", 0), 0)
+        self.assertGreater(results["categories"]["PERSON"]["primary_routes"].get("spacy-en_core_web_trf", 0), 0)
         self.assertLess(results["categories"]["PERSON"]["primary_routes"].get("primary-title-person", 0), 20)
         self.assertEqual((results["falsePositiveControls"], results["negativeEgressBlocks"]), (0, 0))
         self.assertIn("Synthetic privacy qualification", report_markdown(results))
